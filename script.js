@@ -9,18 +9,6 @@ function getFormattedTimestamp() {
   });
 }
 
-function suggestTag(noteText) {
-  const text = noteText.toLowerCase();
-
-  if (text.includes('again') || text.includes('loop')) return 'Spiral';
-  if (text.includes('peace') || text.includes('quiet') || text.includes('nature')) return 'Stillness';
-  if (text.includes('fear') || text.includes('panic') || text.includes('overthinking')) return 'Fear';
-  if (text.includes('clarity') || text.includes('truth')) return 'Clarity';
-  if (text.includes('nudge') || text.includes('aligned')) return 'Alignment';
-
-  return null;
-}
-
 function saveNote() {
   const input = document.getElementById('noteInput');
   const note = input.value.trim();
@@ -36,7 +24,8 @@ function saveNote() {
   renderNotes();
 }
 
-function renderNotes() {
+// 👇 this is the key change — renderNotes is now async
+async function renderNotes() {
   const notes = JSON.parse(localStorage.getItem('notes') || '[]');
   const container = document.getElementById('notesContainer');
   container.innerHTML = '';
@@ -53,7 +42,7 @@ function renderNotes() {
     return new Date(b) - new Date(a);
   });
 
-  sortedDates.forEach(date => {
+  for (const date of sortedDates) {
     const groupDiv = document.createElement('div');
     groupDiv.className = 'note-group';
 
@@ -62,8 +51,22 @@ function renderNotes() {
     dateHeader.textContent = `📅 ${date}`;
     groupDiv.appendChild(dateHeader);
 
-    grouped[date].forEach(note => {
-      const tag = suggestTag(note.text);
+    for (const note of grouped[date]) {
+      let tag = null;
+
+      // 🔁 Call GPT API for tag
+      try {
+        const res = await fetch('/api/tag', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ note: note.text })
+        });
+
+        const data = await res.json();
+        tag = data.tag;
+      } catch (err) {
+        console.error('Tagging failed:', err);
+      }
 
       const noteDiv = document.createElement('div');
       noteDiv.className = 'note';
@@ -73,10 +76,10 @@ function renderNotes() {
         ${tag ? `<div class="tag-suggestion">🧠 Suggested tag: <strong>${tag}</strong></div>` : ''}
       `;
       groupDiv.appendChild(noteDiv);
-    });
+    }
 
     container.appendChild(groupDiv);
-  });
+  }
 }
 
-renderNotes(); // Load notes on page load
+renderNotes(); // Initial call
