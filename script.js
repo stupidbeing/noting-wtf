@@ -9,6 +9,18 @@ function getFormattedTimestamp() {
   });
 }
 
+function suggestTag(noteText) {
+  const text = noteText.toLowerCase();
+
+  if (text.includes('again') || text.includes('loop')) return 'Spiral';
+  if (text.includes('peace') || text.includes('quiet') || text.includes('nature')) return 'Stillness';
+  if (text.includes('fear') || text.includes('panic') || text.includes('overthinking')) return 'Fear';
+  if (text.includes('clarity') || text.includes('truth')) return 'Clarity';
+  if (text.includes('nudge') || text.includes('aligned')) return 'Alignment';
+
+  return null;
+}
+
 function saveNote() {
   const input = document.getElementById('noteInput');
   const note = input.value.trim();
@@ -29,11 +41,41 @@ function renderNotes() {
   const container = document.getElementById('notesContainer');
   container.innerHTML = '';
 
+  const grouped = {};
+
   notes.forEach(note => {
-    const div = document.createElement('div');
-    div.className = 'note';
-    div.innerHTML = `<div class="timestamp">🕓 ${note.timestamp}</div><div>${note.text}</div>`;
-    container.appendChild(div);
+    const date = note.timestamp.substring(0, 11).trim();
+    if (!grouped[date]) grouped[date] = [];
+    grouped[date].push(note);
+  });
+
+  const sortedDates = Object.keys(grouped).sort((a, b) => {
+    return new Date(b) - new Date(a);
+  });
+
+  sortedDates.forEach(date => {
+    const groupDiv = document.createElement('div');
+    groupDiv.className = 'note-group';
+
+    const dateHeader = document.createElement('h3');
+    dateHeader.className = 'date-header';
+    dateHeader.textContent = `📅 ${date}`;
+    groupDiv.appendChild(dateHeader);
+
+    grouped[date].forEach(note => {
+      const tag = suggestTag(note.text);
+
+      const noteDiv = document.createElement('div');
+      noteDiv.className = 'note';
+      noteDiv.innerHTML = `
+        <div class="timestamp">🕓 ${note.timestamp}</div>
+        <div>${note.text}</div>
+        ${tag ? `<div class="tag-suggestion">🧠 Suggested tag: <strong>${tag}</strong></div>` : ''}
+      `;
+      groupDiv.appendChild(noteDiv);
+    });
+
+    container.appendChild(groupDiv);
   });
 }
 
