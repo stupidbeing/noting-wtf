@@ -1,12 +1,5 @@
 function getFormattedTimestamp() {
-  const now = new Date();
-  return now.toLocaleString('en-GB', {
-    year: 'numeric',
-    month: 'short',
-    day: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit',
-  });
+  return new Date().toISOString(); // Use consistent ISO format
 }
 
 function suggestTag(noteText) {
@@ -41,7 +34,12 @@ function renderNotes() {
 
   const grouped = {};
   notes.forEach(note => {
-    const date = note.timestamp.split(',')[0].trim(); // Ensures proper date grouping
+    const date = new Date(note.timestamp).toLocaleDateString('en-GB', {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric',
+    });
+
     if (!grouped[date]) grouped[date] = [];
     grouped[date].push(note);
   });
@@ -59,7 +57,11 @@ function renderNotes() {
 
     grouped[date].forEach(note => {
       const tag = suggestTag(note.text);
-      const time = note.timestamp.split(',')[1]?.trim() || ''; // Ensure no crash if comma missing
+      const time = new Date(note.timestamp).toLocaleTimeString('en-GB', {
+        hour: '2-digit',
+        minute: '2-digit',
+      });
+
       const noteDiv = document.createElement('div');
       noteDiv.className = 'note';
       noteDiv.innerHTML = `
@@ -75,6 +77,3 @@ function renderNotes() {
 }
 
 renderNotes();
-
-// Trigger Vercel redeploy
-
