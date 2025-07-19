@@ -41,7 +41,7 @@ function renderNotes() {
 
   const grouped = {};
   notes.forEach(note => {
-    const date = note.timestamp.substring(0, 11).trim();
+    const date = note.timestamp.split(',')[0].trim(); // Ensures proper date grouping
     if (!grouped[date]) grouped[date] = [];
     grouped[date].push(note);
   });
@@ -59,10 +59,11 @@ function renderNotes() {
 
     grouped[date].forEach(note => {
       const tag = suggestTag(note.text);
+      const time = note.timestamp.split(',')[1]?.trim() || ''; // Ensure no crash if comma missing
       const noteDiv = document.createElement('div');
       noteDiv.className = 'note';
       noteDiv.innerHTML = `
-        <div class="timestamp">🕓 ${note.timestamp.split(',')[1].trim()}</div>
+        <div class="timestamp">🕓 ${time}</div>
         <div>${note.text}</div>
         ${tag ? `<div class="tag-suggestion">🧠 Suggested tag: <strong>${tag}</strong></div>` : ''}
       `;
@@ -74,3 +75,6 @@ function renderNotes() {
 }
 
 renderNotes();
+
+// Trigger Vercel redeploy
+
