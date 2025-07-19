@@ -9,6 +9,16 @@ function getFormattedTimestamp() {
   });
 }
 
+function suggestTag(noteText) {
+  const text = noteText.toLowerCase();
+  if (text.includes('again') || text.includes('loop')) return 'Spiral';
+  if (text.includes('peace') || text.includes('quiet') || text.includes('nature')) return 'Stillness';
+  if (text.includes('fear') || text.includes('panic') || text.includes('overthinking')) return 'Fear';
+  if (text.includes('clarity') || text.includes('truth')) return 'Clarity';
+  if (text.includes('nudge') || text.includes('aligned')) return 'Alignment';
+  return null;
+}
+
 function saveNote() {
   const input = document.getElementById('noteInput');
   const note = input.value.trim();
@@ -24,25 +34,21 @@ function saveNote() {
   renderNotes();
 }
 
-// 👇 this is the key change — renderNotes is now async
-async function renderNotes() {
+function renderNotes() {
   const notes = JSON.parse(localStorage.getItem('notes') || '[]');
   const container = document.getElementById('notesContainer');
   container.innerHTML = '';
 
   const grouped = {};
-
   notes.forEach(note => {
     const date = note.timestamp.substring(0, 11).trim();
     if (!grouped[date]) grouped[date] = [];
     grouped[date].push(note);
   });
 
-  const sortedDates = Object.keys(grouped).sort((a, b) => {
-    return new Date(b) - new Date(a);
-  });
+  const sortedDates = Object.keys(grouped).sort((a, b) => new Date(b) - new Date(a));
 
-  for (const date of sortedDates) {
+  sortedDates.forEach(date => {
     const groupDiv = document.createElement('div');
     groupDiv.className = 'note-group';
 
@@ -51,35 +57,20 @@ async function renderNotes() {
     dateHeader.textContent = `📅 ${date}`;
     groupDiv.appendChild(dateHeader);
 
-    for (const note of grouped[date]) {
-      let tag = null;
-
-      // 🔁 Call GPT API for tag
-      try {
-        const res = await fetch('/api/tag', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ note: note.text })
-        });
-
-        const data = await res.json();
-        tag = data.tag;
-      } catch (err) {
-        console.error('Tagging failed:', err);
-      }
-
+    grouped[date].forEach(note => {
+      const tag = suggestTag(note.text);
       const noteDiv = document.createElement('div');
       noteDiv.className = 'note';
       noteDiv.innerHTML = `
-        <div class="timestamp">🕓 ${note.timestamp}</div>
+        <div class="timestamp">🕓 ${note.timestamp.split(',')[1].trim()}</div>
         <div>${note.text}</div>
         ${tag ? `<div class="tag-suggestion">🧠 Suggested tag: <strong>${tag}</strong></div>` : ''}
       `;
       groupDiv.appendChild(noteDiv);
-    }
+    });
 
     container.appendChild(groupDiv);
-  }
+  });
 }
 
-renderNotes(); // Initial call
+renderNotes();
